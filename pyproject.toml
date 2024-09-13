@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "ql-timingscript"
+version = "0.1.0"
+description = ""
+authors = ["liulong <liulong@3mencn.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+httpx = "^0.27.2"
+requests = "^2.32.3"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "aliyun"
+url = "http://mirrors.aliyun.com/pypi/simple/"
+priority = "primary"
