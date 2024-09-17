@@ -265,7 +265,7 @@ class WeChatPushMessage:
 
             "touser": user,
             "template_id": TEMPLATE_ID,
-            "url": "http://www.baidu.com",
+            "url": "heartSpin.html",
             "topcolor": "#FF0000",
             "data": {
                 "today": {"value": time_, "color": self.get_color()},  # 当前时间
