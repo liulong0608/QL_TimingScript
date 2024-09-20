@@ -21,15 +21,15 @@ class HaoYouKuaiBao():
     """好游快爆签到
     """
 
-    def __init__(self):
-        self.cookie = Hykb_cookie
+    def __init__(self, cookie, user_agent):
+        self.cookie = cookie
         self.url = "https://huodong3.3839.com/n/hykb/{}/ajax{}.php"
         self.data = "ac={}&r=0.{}&scookie={}"
         self.headers = {
             "Origin": "https://huodong3.i3839.com",
             "Referer": "https://huodong3.3839.com/n/hykb/cornfarm/index.php?imm=0",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 13; M2012K11AC Build/TKQ1.220829.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/115.0.5790.166 Mobile Safari/537.36Androidkb/1.5.7.005(android;M2012K11AC;13;1080x2320;WiFi);@4399_sykb_android_activity@"
+            "User-Agent": user_agent
         }
 
     def plant(self) -> int:
@@ -178,7 +178,11 @@ class HaoYouKuaiBao():
 
 
 if __name__ == '__main__':
-    for cookie_ in Hykb_cookie:
-        hykb = HaoYouKuaiBao()
+    user_agents = [
+        "Mozilla/5.0 (Linux; Android 13; M2012K11AC Build/TKQ1.220829.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/115.0.5790.166 Mobile Safari/537.36Androidkb/1.5.7.005(android;M2012K11AC;13;1080x2320;WiFi);@4399_sykb_android_activity@",
+        "Mozilla/5.0 (Linux; Android 12; Redmi K30 Pro Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/96.0.4664.104 Mobile Safari/537.36Androidkb/1.5.7.507(android;Redmi K30 Pro;12;1080x2356;WiFi);@4399_sykb_android_activity@"
+    ]
+    for cookie_, user_agent in zip(Hykb_cookie, user_agents):
+        hykb = HaoYouKuaiBao(cookie_, user_agent)
         hykb.sgin()
         del hykb
