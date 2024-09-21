@@ -472,5 +472,12 @@ def main():
     send('title', 'content')
 
 
+def send_notification_message(title, content):
+    try:
+        dingding_bot(title, content)
+    except Exception as e:
+        print("发送通知消息失败")
+
+
 if __name__ == '__main__':
     main()

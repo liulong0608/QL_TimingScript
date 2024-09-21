@@ -5,10 +5,11 @@
 # @EditTime         2024/9/20
 import os
 import re
+from datetime import datetime
 
 import requests
 import random
-import datetime
+from sendNotify import send_notification_message
 
 if 'Hykb_cookie' in os.environ:
     Hykb_cookie = re.split("@|&", os.environ.get("Hykb_cookie"))
@@ -41,13 +42,16 @@ class HaoYouKuaiBao():
             response = requests.post(url, headers=self.headers, data=data).json()
             if response['key'] == 'ok':
                 print("好游快爆-播种成功")
+                send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"), "好游快爆-播种成功")
                 return 1
             else:
                 if response['seed'] == 0:
                     print("好游快爆-种子已用完")
+                    send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"), "好游快爆-种子已用完")
                     return -1
                 else:
                     print("好游快爆-播种失败")
+                    send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"), "好游快爆-播种失败")
                     return 0
         except Exception as e:
             print(f"好游快爆-播种出现错误：{e}")
@@ -62,9 +66,11 @@ class HaoYouKuaiBao():
             response = requests.post(url, headers=self.headers, data=data).json()
             if response['key'] == 'ok':
                 print("好游快爆-收获成功")
+                send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"), "好游快爆-收获成功")
                 return True
             else:
                 print("好游快爆-收获失败")
+                send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"), "好游快爆-收获失败")
                 return False
         except Exception as e:
             print(f"好游快爆-收获出现错误：{e}")
@@ -94,9 +100,11 @@ class HaoYouKuaiBao():
             response = requests.post(url, headers=self.headers, data=data).json()
             if response['key'] == 'ok':
                 print("好游快爆-浇水成功")
+                send_notification_message(title="好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"), content="好游快爆-浇水成功")
                 return 1, response['add_baomihua']
             elif response['key'] == '1001':
                 print("好游快爆-今日已浇水")
+                send_notification_message(title="好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"), content="好游快爆-今日已浇水")
                 return 0, 0
             else:
                 print("好游快爆-浇水出现错误：{}".format(response))
