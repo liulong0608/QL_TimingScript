@@ -3,14 +3,14 @@
 # @fileName         hello_signIn.py
 # @author           Echo
 # @EditTime         2024/9/23
+import asyncio
 import os
 import re
 from datetime import datetime
 
 import httpx
-import asyncio
 
-from sendNotify import send_notification_message
+from sendNotify import aysnc_send_notification_message
 
 
 class HelloSignIn:
@@ -70,7 +70,7 @@ class HelloSignIn:
         point_result = await self.point_info()
         message = f"{sign_result}\n{point_result}"
         print(message)
-        await send_notification_message(f"哈啰出行-签到通知 - {datetime.now().strftime('%Y/%m/%d')}", message)
+        await aysnc_send_notification_message(f"哈啰出行-签到通知 - {datetime.now().strftime('%Y/%m/%d')}", message)
         await self.client.aclose()
 
 
