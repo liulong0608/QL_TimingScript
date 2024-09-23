@@ -4,7 +4,9 @@
 # @author           Echo
 # @EditTime         2024/9/14
 import datetime
+import os
 import random
+import re
 import time
 import httpx
 from typing import Text, Optional, List, Dict
@@ -33,25 +35,29 @@ from typing import Text, Optional, List, Dict
 """
 设置配置常量
 """
-API_KEY = ""  # 天聚数行密钥
-APP_ID = ""  # 微信公众号appid
-APP_SECRET = ""  # 微信公众号appsecret
-WECHAT_USER_IDS = []    # 要推送的微信用户ID
-TEMPLATE_ID = ""        # 模板ID
-CITY_NAME = ""          # 城市
-AREA = ""               # 区县
-EXAMINATION_DATE = ""   # 考研日期
-USER = ""               # 对象称呼
-BIRTHDAY = ""           # 对象生日
-STAR_SIGN = ""          # 对象星座
-LOVE_DATE = ""          # 恋爱开始日期
+CONFIG = {
+    "API_KEY": "",           # 天聚数行密钥
+    "APP_ID": "",            # 微信公众号appid
+    "APP_SECRET": "",        # 微信公众号appsecret
+    "TEMPLATE_ID": "",       # 模板ID
+    "CITY_NAME": "",         # 城市
+    "AREA": "",              # 区县
+    "EXAMINATION_DATE": "",  # 考研日期
+    "USER": "",              # 对象称呼
+    "BIRTHDAY": "",          # 对象生日
+    "STAR_SIGN": "",         # 对象星座
+    "LOVE_DATE": ""          # 恋爱开始日期
+}
 
+# 从环境变量中获取配置，如果环境变量不存在则使用默认值
+for key in CONFIG:
+    CONFIG[key] = os.environ.get(key, CONFIG[key])
 
-# if 'tian_api_key' in os.environ:
-#     api_key = re.split("@|&", os.environ.get("tian_api_key"))
-# else:
-#     api_key = []
-#     print("未查找到tian_api_key变量.")
+# 特殊处理 WECHAT_USER_IDS，因为它需要被分割
+WECHAT_USER_IDS = re.split("@|&", os.environ.get("WECHAT_USER_IDS", "")) if "WECHAT_USER_IDS" in os.environ else []
+
+# 使用全局变量
+globals().update(CONFIG)
 
 
 def time_diff(time1: Text, time2: Text, format) -> int:
@@ -259,7 +265,7 @@ class WeChatPushMessage:
 
             "touser": user,
             "template_id": TEMPLATE_ID,
-            "url": "http://www.baidu.com",
+            "url": "heartSpin.html",
             "topcolor": "#FF0000",
             "data": {
                 "today": {"value": time_, "color": self.get_color()},  # 当前时间
