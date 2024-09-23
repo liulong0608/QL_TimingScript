@@ -60,7 +60,7 @@ class PzSignIn:
         response = self.client.get(
             "/home/userWallet-find"
         ).json()
-        return response["data"]["balance"]
+        return str(response["data"]["balance"])
 
     def sign_in(self):
         """
