@@ -44,7 +44,7 @@ class PzSignIn:
         except Exception as e:
             print(e)
             print(response.text)
-        token = response_json["data"]
+        token = response_json["data"]['token']
         if token is not None:
             print("=" * 30 + f"登录成功，开始执行签到" + "=" * 30)
             self.client.headers["Authorization"] = "Bearer " + token
