@@ -13,7 +13,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 if 'Hykb_cookie' in os.environ:
-    hykb_cookie = re.split("@|&", os.environ.get("Hykb_cookie"))
+    hykb_cookie = re.split("@", os.environ.get("Hykb_cookie"))
     print(f"查找到{len(hykb_cookie)}个账号")
 else:
     hykb_cookie = []
