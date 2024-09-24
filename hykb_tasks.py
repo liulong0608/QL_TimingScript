@@ -4,16 +4,17 @@
 # @author           Echo
 # @EditTime         2024/9/24
 import asyncio
+import os
 import random
 import re
 import urllib.parse
 from datetime import datetime
-import os
-from urllib.parse import quote_plus
 
 import httpx
 from bs4 import BeautifulSoup
 
+from fn_print import fn_print
+from sendNotify import send_notification_message_collection
 
 if 'Hykb_cookie' in os.environ:
     hykb_cookie = re.split("@", os.environ.get("Hykb_cookie"))
@@ -23,6 +24,7 @@ else:
     print("未查找到Hykb_cookie变量.")
     exit()
 
+
 class AsyncHykbTasks:
     def __init__(self, cookie):
         self.client = httpx.AsyncClient(base_url="https://huodong3.3839.com",
@@ -30,10 +32,11 @@ class AsyncHykbTasks:
                                             'User-Agent': "Mozilla/5.0 (Linux; Android 12; Redmi K30 Pro Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/96.0.4664.104 Mobile Safari/537.36Androidkb/1.5.7.507(android;Redmi K30 Pro;12;1080x2356;WiFi);@4399_sykb_android_activity@",
                                             'Content-Type': "application/x-www-form-urlencoded; charset=UTF-8",
                                             'Origin': "https://huodong3.3839.com",
-                                            'Referer': "https://huodong3.3839.com/n/hykb/newsign/index.php?imm=0&hd_id=1416",
+                                            'Referer': "https://huodong3.3839.com/n/hykb/newsign/index.php?imm=0",
                                         },
                                         verify=False)
         self.cookie = cookie
+        self.temp_id = []
         self.items = []
 
     async def get_task_ids(self):
@@ -71,21 +74,27 @@ class AsyncHykbTasks:
         await self.get_task("login", id)
         data = await self.get_task("signToday", id)
 
-        key = data["key"]
+        key = str(data["key"])
         if key == "-1005":
-            print("体验游戏中,请一分钟后再刷新领取☑️")
+            fn_print("体验游戏中,请一分钟后再刷新领取☑️")
             await self.get_task("tiyan", id)
+            # self.temp_id.append(
+            #     {
+            #         "title": item["title"],
+            #         "id": id
+            #     }
+            # )  # 将正在体验的活动id加入列表中
         elif key == "-1007":
             await self.get_task("sharelimit", id)
-            print(f"活动【{item['title']}】分享成功！✅")
+            fn_print(f"活动【{item['title']}】分享成功！✅")
             await self.get_task("login", id)
             await self.get_task("signToday", id)
         elif key == "-1002":
-            print(f"活动【{item['title']}】奖励已领取过了！")
+            fn_print(f"活动【{item['title']}】奖励已领取过了！")
         elif key == "200":
-            print(f"活动【{item['title']}】签到成功！✅已签到{data['signnum']}天")
+            fn_print(f"活动【{item['title']}】签到成功！✅已签到{data['signnum']}天")
         elif key == "no_login":
-            print("⚠️⚠️scookie失效,请重新配置⚠️⚠️")
+            fn_print("⚠️⚠️scookie失效,请重新配置⚠️⚠️")
             return False
         return True
 
@@ -96,7 +105,28 @@ class AsyncHykbTasks:
         for item in self.items:
             if not await self.process_item(item):
                 break
-
+        # if self.temp_id:
+        #     print("等待体验结束...")
+        #     time.sleep(60)
+        #     for ty_id in self.temp_id:
+        #         await self.get_task("login", ty_id)
+        #         data = await self.get_task("signToday", ty_id)
+        #         key = str(data["key"])
+        #         if key == "-1005":
+        #             print("体验游戏中,请一分钟后再刷新领取☑️")
+        #             await self.get_task("tiyan", id)
+        #             self.temp_id.append(id)  # 将正在体验的活动id加入列表中
+        #         elif key == "-1007":
+        #             await self.get_task("sharelimit", id)
+        #             print(f"活动【{item['title']}】分享成功！✅")
+        #             await self.get_task("login", id)
+        #             await self.get_task("signToday", id)
+        #         elif key == "-1002":
+        #             print(f"活动【{item['title']}】奖励已领取过了！")
+        #         elif key == "200":
+        #             print(f"活动【{item['title']}】签到成功！✅已签到{data['signnum']}天")
+        #         elif key == "no_login":
+        #             print("⚠️⚠️scookie失效,请重新配置⚠️⚠️")
         await self.client.aclose()
 
 
@@ -116,3 +146,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+    send_notification_message_collection(f"好游快爆活动奖励领取通知 - {datetime.now().strftime("%Y/%m/%d")}")
