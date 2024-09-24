@@ -3,7 +3,6 @@
 # @fileName         sendNotify.py
 # @author           Echo
 # @EditTime         2024/9/13
-from curses.ascii import FS
 import sys
 import os, re
 import requests
@@ -15,6 +14,8 @@ import base64
 import urllib.parse
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
+
+from fn_print import all_print_list
 
 cur_path = os.path.abspath(os.path.dirname(__file__))
 root_path = os.path.split(cur_path)[0]
@@ -465,7 +466,6 @@ def send(title, content):
             continue
         else:
             print('此类推送方式不存在')
-    print("xxxxxxxxxxxx")
 
 
 def main():
@@ -477,7 +477,15 @@ def send_notification_message(title, content):
         dingding_bot(title, content)
     except Exception as e:
         print("发送通知消息失败")
-        
+
+
+def send_notification_message_collection(title):
+    try:
+        send(title, ''.join(all_print_list))
+    except Exception as e:
+        if e:
+            print('发送通知消息失败！')
+
 
 async def aysnc_send_notification_message(title, content):
     try:
