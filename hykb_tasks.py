@@ -9,8 +9,11 @@ import re
 import urllib.parse
 from datetime import datetime
 import os
+from urllib.parse import quote_plus
+
 import httpx
 from bs4 import BeautifulSoup
+
 
 if 'Hykb_cookie' in os.environ:
     hykb_cookie = re.split("@", os.environ.get("Hykb_cookie"))
@@ -20,10 +23,16 @@ else:
     print("未查找到Hykb_cookie变量.")
     exit()
 
-
 class AsyncHykbTasks:
     def __init__(self, cookie):
-        self.client = httpx.AsyncClient(base_url="https://huodong3.3839.com", verify=False)
+        self.client = httpx.AsyncClient(base_url="https://huodong3.3839.com",
+                                        headers={
+                                            'User-Agent': "Mozilla/5.0 (Linux; Android 12; Redmi K30 Pro Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/96.0.4664.104 Mobile Safari/537.36Androidkb/1.5.7.507(android;Redmi K30 Pro;12;1080x2356;WiFi);@4399_sykb_android_activity@",
+                                            'Content-Type': "application/x-www-form-urlencoded; charset=UTF-8",
+                                            'Origin': "https://huodong3.3839.com",
+                                            'Referer': "https://huodong3.3839.com/n/hykb/newsign/index.php?imm=0&hd_id=1416",
+                                        },
+                                        verify=False)
         self.cookie = cookie
         self.items = []
 
@@ -44,13 +53,17 @@ class AsyncHykbTasks:
 
     async def get_task(self, a, hd_id_):
         try:
+            payload = f"ac={a}&hd_id={hd_id_}&hd_id2={hd_id_}&t={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}&r=0.{random.randint(1000000000000000, 8999999999999999)}&scookie={self.cookie}"
+            url = "https://huodong3.3839.com/n/hykb/newsign/ajax.php"
+            self.client.headers["Referer"] = f"https://huodong3.3839.com/n/hykb/newsign/index.php?imm=0&hd_id={hd_id_}"
             response = await self.client.post(
-                url="/n/hykb/signcard/ajax.php",
-                content=f"ac={a}&t={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}&r=0.{random.randint(1000000000000000, 8999999999999999)}&hd_id={hd_id_}&hd_id2={hd_id_}&scookie={self.cookie}",
+                url=url,
+                data=payload,
             )
-            return response.json()
+            response_json = response.json()
+            return response_json
         except Exception as e:
-            print(f"Error in get_task: {e}")
+            print(e)
             return None
 
     async def process_item(self, item):
@@ -77,7 +90,7 @@ class AsyncHykbTasks:
         return True
 
     async def task(self):
-        self.cookie = urllib.parse.quote(self.cookie) if "|" in self.cookie else self.cookie
+        cookie = urllib.parse.quote(self.cookie) if "|" in self.cookie else self.cookie
         await self.get_task_ids()
 
         for item in self.items:
@@ -98,8 +111,7 @@ async def run_all_tasks(cookies):
 
 
 async def main():
-    ht = AsyncHykbTasks(hykb_cookie)
-    await ht.task()
+    await run_all_tasks(hykb_cookie)
 
 
 if __name__ == '__main__':
