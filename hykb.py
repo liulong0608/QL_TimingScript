@@ -12,7 +12,7 @@ import random
 from sendNotify import send_notification_message
 
 if 'Hykb_cookie' in os.environ:
-    Hykb_cookie = re.split("@|&", os.environ.get("Hykb_cookie"))
+    Hykb_cookie = re.split("@", os.environ.get("Hykb_cookie"))
 else:
     Hykb_cookie = []
     print("未查找到Hykb_cookie变量.")
