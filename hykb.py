@@ -154,10 +154,12 @@ class HaoYouKuaiBao():
     #     print(response.json())
 
     def sgin(self):
+        user_name = self.user_info()["user"]
         info = ""
         # 登录
         data = self.login()
         if data['key'] == 'ok':
+            print(f"用户： {user_name} 登录成功！✅")
             if data['config']['csd_jdt'] == "100%":
                 # 收获
                 if self.harvest():
