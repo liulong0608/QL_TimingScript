@@ -5,6 +5,7 @@
 # @EditTime         2024/9/20
 import os
 import re
+import threading
 from datetime import datetime
 
 import requests
@@ -22,16 +23,16 @@ class HaoYouKuaiBao():
     """好游快爆签到
     """
 
-    def __init__(self, cookie, user_agent):
+    def __init__(self, cookie):
         self.cookie = cookie
         self.url = "https://huodong3.3839.com/n/hykb/{}/ajax{}.php"
         self.data = "ac={}&r=0.{}&scookie={}"
         self.headers = {
             "Origin": "https://huodong3.i3839.com",
             "Referer": "https://huodong3.3839.com/n/hykb/cornfarm/index.php?imm=0",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "User-Agent": user_agent
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
         }
+        self.user_name = self.user_info()["user"]
 
     def user_info(self):
         """
@@ -50,7 +51,7 @@ class HaoYouKuaiBao():
             if response['key'] == 'ok':
                 return {
                     "user": response["config"]["name"],
-                    "uuid": response["config"]["uuid"]
+                    "uuid": response["config"]["uid"]
                 }
         except Exception as e:
             print("好游快爆-获取用户信息出现错误：{}".format(e))
@@ -63,20 +64,20 @@ class HaoYouKuaiBao():
         try:
             response = requests.post(url, headers=self.headers, data=data).json()
             if response['key'] == 'ok':
-                print("好游快爆-播种成功")
+                print(f"好游快爆-用户【{self.user_name}】播种成功")
                 send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
-                                          "好游快爆-播种成功")
+                                          f"好游快爆-用户【{self.user_name}】播种成功")
                 return 1
             else:
                 if response['seed'] == 0:
-                    print("好游快爆-种子已用完")
+                    print(f"好游快爆-用户【{self.user_name}】种子已用完")
                     send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
-                                              "好游快爆-种子已用完")
+                                              f"好游快爆-用户【{self.user_name}】种子已用完")
                     return -1
                 else:
-                    print("好游快爆-播种失败")
+                    print(f"好游快爆-用户【{self.user_name}】播种失败")
                     send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
-                                              "好游快爆-播种失败")
+                                              f"好游快爆-用户【{self.user_name}】播种失败")
                     return 0
         except Exception as e:
             print(f"好游快爆-播种出现错误：{e}")
@@ -90,14 +91,14 @@ class HaoYouKuaiBao():
         try:
             response = requests.post(url, headers=self.headers, data=data).json()
             if response['key'] == 'ok':
-                print("好游快爆-收获成功")
+                print(f"好游快爆-用户【{self.user_name}】收获成功")
                 send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
-                                          "好游快爆-收获成功")
+                                          f"好游快爆-用户【{self.user_name}】收获成功")
                 return True
             else:
-                print("好游快爆-收获失败")
+                print(f"好游快爆-用户【{self.user_name}】收获失败")
                 send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
-                                          "好游快爆-收获失败")
+                                          f"好游快爆-用户【{self.user_name}】收获失败")
                 return False
         except Exception as e:
             print(f"好游快爆-收获出现错误：{e}")
@@ -126,14 +127,14 @@ class HaoYouKuaiBao():
         try:
             response = requests.post(url, headers=self.headers, data=data).json()
             if response['key'] == 'ok':
-                print("好游快爆-浇水成功")
+                print(f"好游快爆-用户【{self.user_name}】浇水成功")
                 send_notification_message(title="好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
-                                          content="好游快爆-浇水成功")
+                                          content=f"好游快爆-用户【{self.user_name}】浇水成功")
                 return 1, response['add_baomihua']
             elif response['key'] == '1001':
-                print("好游快爆-今日已浇水")
+                print(f"好游快爆-用户【{self.user_name}】今日已浇水")
                 send_notification_message(title="好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
-                                          content="好游快爆-今日已浇水")
+                                          content=f"好游快爆-用户【{self.user_name}】今日已浇水")
                 return 0, 0
             else:
                 print("好游快爆-浇水出现错误：{}".format(response))
@@ -154,12 +155,11 @@ class HaoYouKuaiBao():
     #     print(response.json())
 
     def sgin(self):
-        user_name = self.user_info()["user"]
         info = ""
         # 登录
         data = self.login()
         if data['key'] == 'ok':
-            print(f"用户： {user_name} 登录成功！✅")
+            print(f"用户： 【{self.user_name}】登录成功！✅")
             if data['config']['csd_jdt'] == "100%":
                 # 收获
                 if self.harvest():
@@ -217,11 +217,11 @@ class HaoYouKuaiBao():
 
 
 if __name__ == '__main__':
-    user_agents = [
-        "Mozilla/5.0 (Linux; Android 13; M2012K11AC Build/TKQ1.220829.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/115.0.5790.166 Mobile Safari/537.36Androidkb/1.5.7.005(android;M2012K11AC;13;1080x2320;WiFi);@4399_sykb_android_activity@",
-        "Mozilla/5.0 (Linux; Android 12; Redmi K30 Pro Build/SKQ1.211006.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/96.0.4664.104 Mobile Safari/537.36Androidkb/1.5.7.507(android;Redmi K30 Pro;12;1080x2356;WiFi);@4399_sykb_android_activity@"
-    ]
-    for cookie_, user_agent in zip(Hykb_cookie, user_agents):
-        hykb = HaoYouKuaiBao(cookie_, user_agent)
-        hykb.sgin()
-        del hykb
+    threads = []
+    for cookie_ in Hykb_cookie:
+        hykb = HaoYouKuaiBao(cookie_)
+        thread = threading.Thread(target=hykb.sgin)
+        threads.append(thread)
+        thread.start()
+    for thread in threads:
+        thread.join()
