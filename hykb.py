@@ -4,12 +4,14 @@
 # @author           Echo
 # @EditTime         2024/9/20
 import os
+import random
 import re
 import threading
+import urllib.parse
 from datetime import datetime
 
-import requests
-import random
+import httpx
+
 from sendNotify import send_notification_message
 
 if 'Hykb_cookie' in os.environ:
@@ -24,14 +26,16 @@ class HaoYouKuaiBao():
     """
 
     def __init__(self, cookie):
+        self.client = httpx.Client(
+            verify=False,
+            headers={
+                "Origin": "https://huodong3.i3839.com",
+                "Referer": "https://huodong3.3839.com/n/hykb/cornfarm/index.php?imm=0",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+            }
+        )
         self.cookie = cookie
         self.url = "https://huodong3.3839.com/n/hykb/{}/ajax{}.php"
-        self.data = "ac={}&r=0.{}&scookie={}"
-        self.headers = {
-            "Origin": "https://huodong3.i3839.com",
-            "Referer": "https://huodong3.3839.com/n/hykb/cornfarm/index.php?imm=0",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-        }
         self.user_name = self.user_info()["user"]
 
     def user_info(self):
@@ -40,14 +44,9 @@ class HaoYouKuaiBao():
         :return: 
         """
         url = self.url.format("qdjh", "")
-        data = {
-            "ac": "login",
-            "r": f"0.{random.randint(1000000000000000, 8999999999999999)}",
-            "scookie": self.cookie,
-            "device": "kbA25014349F11473F467DC6FF5C89E9D6"
-        }
+        payload = f"ac=login&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
         try:
-            response = requests.post(url, headers=self.headers, data=data).json()
+            response = self.client.post(url, content=payload).json()
             if response['key'] == 'ok':
                 return {
                     "user": response["config"]["name"],
@@ -60,9 +59,9 @@ class HaoYouKuaiBao():
         """播种
         """
         url = self.url.format("cornfarm", "_plant")
-        data = self.data.format("Plant", random.randint(1000000000000000, 8999999999999999), self.cookie)
+        payload = f"ac=Plant&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
         try:
-            response = requests.post(url, headers=self.headers, data=data).json()
+            response = self.client.post(url, content=payload).json()
             if response['key'] == 'ok':
                 print(f"好游快爆-用户【{self.user_name}】播种成功")
                 send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
@@ -87,14 +86,17 @@ class HaoYouKuaiBao():
         """收获
         """
         url = self.url.format("cornfarm", "_plant")
-        data = self.data.format("Harvest", random.randint(1000000000000000, 8999999999999999), self.cookie)
+        payload = f"ac=Harvest&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
         try:
-            response = requests.post(url, headers=self.headers, data=data).json()
+            response = self.client.post(url, content=payload).json()
             if response['key'] == 'ok':
                 print(f"好游快爆-用户【{self.user_name}】收获成功")
                 send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
                                           f"好游快爆-用户【{self.user_name}】收获成功")
-                return True
+            elif response['key'] == '503':
+                print(f"好游快爆-用户【{self.user_name}】{response['info']}")
+                send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
+                                          f"好游快爆-用户【{self.user_name}】{response['info']}")
             else:
                 print(f"好游快爆-用户【{self.user_name}】收获失败")
                 send_notification_message("好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
@@ -108,24 +110,22 @@ class HaoYouKuaiBao():
         """登录
         """
         url = self.url.format("cornfarm", "")
-        data = self.data.format("login", random.randint(100000000000000, 8999999999999999), self.cookie)
-        response = requests.post(url, headers=self.headers, data=data)
+        payload = f"ac=login&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+        response = self.client.post(url, content=payload)
         try:
             response = response.json()
             return response
         except Exception as e:
             print("好游快爆-登录出现错误：{}".format(e))
-            # response = response.text
-            # return response
 
     def watering(self):
         """浇水
         """
         url = self.url.format("cornfarm", "_sign")
-        data = self.data.format("Sign&verison=1.5.7.005&OpenAutoSign=",
-                                random.randint(100000000000000, 8999999999999999), self.cookie)
+        payload = f"ac=Sign&verison=1.5.7.005&OpenAutoSign=&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+
         try:
-            response = requests.post(url, headers=self.headers, data=data).json()
+            response = self.client.post(url, content=payload).json()
             if response['key'] == 'ok':
                 print(f"好游快爆-用户【{self.user_name}】浇水成功")
                 send_notification_message(title="好游快爆签到通知 - " + datetime.now().strftime("%Y/%m/%d"),
