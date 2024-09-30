@@ -232,7 +232,7 @@ class AsyncHykbTasks:
             elif response_json["key"] == "2001":
                 fn_print(f"任务：【{task_items['bmh_task_title']}】今天已经领取过了！")
             else:
-                fn_print(f"奖励领取失败！{response_json.text}")
+                fn_print(f"奖励领取失败！{response.text}")
         except Exception as e:
             print("领取任务奖励异常: ", e)
 
