@@ -22,7 +22,7 @@ else:
     print("未查找到Hykb_cookie变量.")
 
 
-class HaoYouKuaiBao():
+class HaoYouKuaiBao:
     """好游快爆签到
     """
 
@@ -210,56 +210,36 @@ class HaoYouKuaiBao():
         data = self.login()
         if data['key'] == 'ok':
             print(f"用户： 【{self.user_name}】登录成功！✅")
+            # 优先判断是否已收获
             if data['config']['csd_jdt'] == "100%":
                 # 收获
                 if self.harvest():
                     info = info + "收获成功\n"
-                    # 播种
-                    b = self.plant()
-                    if b == -1:
-                        info = info + "播种失败，没有种子\n"
-                    elif b == 1:
-                        info = info + "播种成功\n"
-                        # 浇水
-                        data = self.watering()
-                        if data[0] == 1:
-                            info = info + f"浇水成功,获得{data[1]}爆米花\n"
-                        elif data[0] == 0:
-                            info = info + f"今日已浇水\n"
-                        else:
-                            info = info + f"浇水失败\n"
-                    else:
-                        info = info + "播种失败\n"
                 else:
                     info = info + "收获失败\n"
 
-            elif data['config']['grew'] == '-1':
+            # 判断是否已播种
+            if data['config']['grew'] == '-1':
                 # 播种
                 b = self.plant()
                 if b == -1:
                     info = info + "播种失败，没有种子\n"
+                    # 购买种子
+                    if self.buy_seeds():
+                        info = info + "购买种子成功\n"
                 elif b == 1:
                     info = info + "播种成功\n"
-                    # 浇水
-                    data = self.watering()
-                    if data[0] == 1:
-                        info = info + f"浇水成功,获得{data[1]}爆米花\n"
-                    elif data[0] == 0:
-                        info = info + f"今日已浇水\n"
-                    else:
-                        info = info + f"浇水失败\n"
                 else:
                     info = info + "播种失败\n"
 
+            # 浇水
+            data = self.watering()
+            if data[0] == 1:
+                info = info + f"浇水成功,获得{data[1]}爆米花\n"
+            elif data[0] == 0:
+                info = info + f"今日已浇水\n"
             else:
-                # 浇水
-                data = self.watering()
-                if data[0] == 1:
-                    info = info + f"浇水成功,获得{data[1]}爆米花\n"
-                elif data[0] == 0:
-                    info = info + f"今日已浇水\n"
-                else:
-                    info = info + f"浇水失败\n"
+                info = info + f"浇水失败\n"
         else:
             info = info + "登录失败\n"
 
