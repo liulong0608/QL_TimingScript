@@ -16,7 +16,6 @@ from bs4 import BeautifulSoup
 from fn_print import fn_print
 from sendNotify import send_notification_message_collection
 
-
 if 'Hykb_cookie' in os.environ:
     hykb_cookie = re.split("@", os.environ.get("Hykb_cookie"))
     print(f"查找到{len(hykb_cookie)}个账号")
@@ -40,6 +39,7 @@ class AsyncHykbTasks:
         self.temp_id = []
         self.bmh_tasks = []
         self.items = []
+        self.moreManorToDo_tasks = []
 
     async def get_task_ids(self):
         response = await self.client.get("/n/hykb/qdjh/index.php")
@@ -56,9 +56,9 @@ class AsyncHykbTasks:
                     "id": re.search(r"hd_id=(.+)", parts[1]).group(1)
                 })
 
-    async def get_bmh_task_ids(self):
+    async def get_recommendToDoToday_task_ids(self):
         """
-        获取爆米花相关任务的id
+        获取今日必做推荐任务的id
         :return: 
         """
         response = await self.client.get("/n/hykb/cornfarm/index.php?imm=0")
@@ -70,10 +70,34 @@ class AsyncHykbTasks:
             id_param = tasks_infos.select_one("dd")["class"][0]
             title_param = tasks_infos.select_one("dt").get_text()
             reward_param = tasks_infos.select_one("dd").get_text()
-            self.bmh_tasks.append(
+            if "分享福利" in title_param or "分享资讯" in title_param:
+                self.bmh_tasks.append(
+                    {
+                        "bmh_task_id": re.search(r"daily_dd_(.+)", id_param).group(1),
+                        "bmh_task_title": re.search(r"分享福利：(.*)", title_param).group(
+                            1) if "分享福利" in title_param else re.search(r"分享资讯：(.*)", title_param).group(1),
+                        "reward_num": re.search(r"可得+(.+)", reward_param).group(1)
+                    }
+                )
+
+    async def get_moreManorToDo_task_ids(self):
+        """
+        获取更多庄园必做任务id
+        :return: 
+        """
+        response = await self.client.get("https://huodong3.3839.com/n/hykb/cornfarm/index.php?imm=0")
+        html = response.text
+        soup = BeautifulSoup(html, 'html.parser')
+        task_list = soup.select(".taskYcxUl > li")
+        for task_item in task_list:
+            task_info = task_item.select_one("dl")
+            id_param = task_info["onclick"]
+            title_param = task_info.select_one("dt").get_text()
+            reward_param = task_info.select_one("dd").get_text()
+            self.moreManorToDo_tasks.append(
                 {
-                    "bmh_task_id": re.search(r"daily_dd_(.+)", id_param).group(1),
-                    "bmh_task_title": re.search(r"分享福利：(.*)", title_param).group(1),
+                    "bmh_task_id": re.search(r"ShowLue\((.+),'ycx'\); return false;", id_param).group(1),
+                    "bmh_task_title": title_param,
                     "reward_num": re.search(r"可得+(.+)", reward_param).group(1)
                 }
             )
@@ -85,7 +109,7 @@ class AsyncHykbTasks:
             self.client.headers["Referer"] = f"https://huodong3.3839.com/n/hykb/newsign/index.php?imm=0&hd_id={hd_id_}"
             response = await self.client.post(
                 url=url,
-                data=payload,
+                content=payload,
             )
             response_json = response.json()
             return response_json
@@ -93,7 +117,7 @@ class AsyncHykbTasks:
             print(e)
             return None
 
-    async def process_item(self, item, bmh_itme):
+    """async def process_item(self, item, bmh_itme):
         id = item["id"]
         await self.get_task("login", id)
         data = await self.get_task("signToday", id)
@@ -105,12 +129,6 @@ class AsyncHykbTasks:
         if key == "-1005":
             fn_print("体验游戏中,请一分钟后再刷新领取☑️")
             await self.get_task("tiyan", id)
-            # self.temp_id.append(
-            #     {
-            #         "title": item["title"],
-            #         "id": id
-            #     }
-            # )  # 将正在体验的活动id加入列表中
         elif key == "-1007":
             await self.get_task("sharelimit", id)
             fn_print(f"活动【{item['title']}】分享成功！✅")
@@ -123,36 +141,77 @@ class AsyncHykbTasks:
         elif key == "no_login":
             fn_print("⚠️⚠️scookie失效,请重新配置⚠️⚠️")
             return False
-        return True
+        return True"""
+
+    async def process_moreManorToDo_task(self, mmtodo_item):
+        if "预约" in mmtodo_item["bmh_task_title"]:
+            await self.appointment_moreManorToDo_task(mmtodo_item)
+            await self.get_moreManorToDo_task_reward(mmtodo_item, "YcxYuyueLing")
+        else:
+            if "微博" in mmtodo_item["bmh_task_title"]:
+                await self.get_moreManorToDo_task_reward(mmtodo_item, "YcxToWeiboRemindLing")
+            elif "微信" in mmtodo_item["bmh_task_title"]:
+                await self.get_moreManorToDo_task_reward(mmtodo_item, "YcxToWechatRemindLing")
+            elif "视频" in mmtodo_item["bmh_task_title"]:
+                await self.get_moreManorToDo_task_reward(mmtodo_item, "YcxToH5Url")
+
+    async def process_doItDaily_task(self, bmh_itme):
+        await self.do_tasks_every_day(bmh_itme)
+        await self.get_task_reward(bmh_itme)
 
     async def do_tasks_every_day(self, task_items: dict):
         """
         调度每日必做任务
         :return: 
         """
-        # 分享任务
-        share_url = "https://huodong3.3839.com/n/hykb/cornfarm/ajax_daily.php"
-        share_data = {
-            "ac": "DailyShareCallback",
-            "id": "{}".format(task_items["bmh_task_id"]),
-            "mode": "qq",
-            "source": "ds",
-            "r": f"0.{random.randint(100000000000000, 8999999999999999)}",
-            "scookie": self.cookie,
-            "device": "kbA25014349F11473F467DC6FF5C89E9D6"
-        }
-        share_response = await self.client.post(url=share_url, json=share_data)
+        url = "https://huodong3.3839.com/n/hykb/cornfarm/ajax_daily.php"
+        daily_share_response = await self.client.post(
+            url=url,
+            content=f"ac=DailyShare&id={task_items['bmh_task_id']}&onlyc=0&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+        )
+        if daily_share_response.json()["key"] != "2002":
+            return False
+        # 回调任务
+        payload = (
+            f"ac=DailyShareCallback&id={task_items['bmh_task_id']}&mode=qq&source=ds&r=0.{random.randint(100000000000000, 8999999999999999)}"
+            f"&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6")
+        daily_share_callback_response = await self.client.post(url=url, content=payload)
         try:
-            share_response_json = share_response.json()
+            share_response_json = daily_share_callback_response.json()
             if share_response_json["key"] == "ok" and share_response_json["info"] == "可以领奖":
                 fn_print("任务: {}, 可以领奖了.".format(task_items["bmh_task_title"]))
                 return True
+            elif share_response_json["key"] == "2002":
+                fn_print("任务: {}, 已经领过奖励了.")
+                return False
             else:
                 fn_print("任务: {}, 不可以领奖".format(task_items["bmh_task_title"]))
                 return False
         except Exception as e:
             fn_print("调度任务异常：", e)
-            fn_print(share_response.text)
+            fn_print(daily_share_callback_response.text)
+
+    async def appointment_moreManorToDo_task(self, task_items):
+        """
+        预约更多庄园必做任务
+        :param task_items: 
+        :return: 
+        """
+        url = "https://huodong3.3839.com/n/hykb/cornfarm/ajax_ycx.php"
+        payload = (
+            f"ac=YcxGameDetail&id={task_items['bmh_task_id']}&r=0.{random.randint(100000000000000, 8999999999999999)}"
+            f"&scookie={urllib.parse.quote(self.cookie)}"
+            "&device=kbA25014349F11473F467DC6FF5C89E9D6")
+        am_response = await self.client.post(url, content=payload)
+        try:
+            am_response_json = am_response.json()
+            if am_response_json["key"] == "ok":
+                fn_print(f"任务: 【{task_items['bmh_task_title']}】预约成功！")
+                return True
+            else:
+                fn_print(f"任务: 【{task_items['bmh_task_title']}】预约失败！")
+        except Exception as e:
+            print(f"任务{task_items['bmh_task_title']}预约操作错误：{e}")
 
     async def get_task_reward(self, task_items: dict):
         """
@@ -161,56 +220,98 @@ class AsyncHykbTasks:
         :return: 
         """
         url = "https://huodong3.3839.com/n/hykb/cornfarm/ajax_daily.php"
-        data = {
-            "ac": "DailyShareLing",
-            "smdeviceid": "BOMLz9iBlx4KwA+wayGk+H/+P91GAH9pC0q9dvBQcvwlVTppakJAfBnJr1K5lyBgzXtIcTgeBqAXtI7NWFaaz8A==",
-            "verison": "1.5.7.507",
-            "id": "{}".format(task_items["bmh_task_id"]),
-            "r": f"0.{random.randint(100000000000000, 8999999999999999)}",
-            "scookie": self.cookie,
-            "device": "kbA25014349F11473F467DC6FF5C89E9D6"
-        }
-        response = await self.client.post(url=url, json=data)
+        payload = (
+            f"ac=DailyShareLing&smdeviceid=BTeK4FWZx3plsETCF1uY6S1h2uEajvI1AicKa4Lqz3U7Tt5wKKDZZqVmVr7WpkcEuSQKyiDA3d64bErE%2FsaJp3Q%3D%3D&verison=1.5.7.507&id={task_items['bmh_task_id']}&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={self.cookie}"
+            f"&device=kbA25014349F11473F467DC6FF5C89E9D6")
+        response = await self.client.post(url=url, content=payload)
         try:
             response_json = response.json()
-            if response_json["key"] == "ok" and response_json["message"] == "成功":
+            if response_json["key"] == "ok":
                 fn_print(
                     f"任务: {task_items['bmh_task_title']}- ✅奖励领取成功！\n成熟度+{response_json['reward_csd_num']}\n已完成任务数量：{response_json['daily_renwu_success_total']}\n今日获得成熟度{response_json['daily_day_all_chengshoudu']}")
+            elif response_json["key"] == "2001":
+                fn_print(f"任务：【{task_items['bmh_task_title']}】今天已经领取过了！")
             else:
-                fn_print("奖励领取失败！")
-        except Exception:
-            print(response.text)
+                fn_print(f"奖励领取失败！{response_json.text}")
+        except Exception as e:
+            print("领取任务奖励异常: ", e)
+
+    async def get_moreManorToDo_task_reward(self, task_items, reward_type):
+        """
+        领取更多庄园必做任务的奖励
+        :param task_items: 
+        :param reward_type:
+        :return: 
+        """
+        url = "https://huodong3.3839.com/n/hykb/cornfarm/ajax_ycx.php"
+        if reward_type == "YcxToWechatRemindLing":
+            payload = {
+                "ac": reward_type,
+                "id": f"{task_items['bmh_task_id']}",
+                "smdeviceid": "BTeK4FWZx3plsETCF1uY6S1h2uEajvI1AicKa4Lqz3U7Tt5wKKDZZqVmVr7WpkcEuSQKyiDA3d64bErE/saJp3Q==",
+                "verison": "1.5.7.507",
+                "VersionCode": "342",
+                "r": f"0.{random.randint(100000000000000, 8999999999999999)}",
+                "scookie": self.cookie,
+                "device": "kbA25014349F11473F467DC6FF5C89E9D6"
+            }
+        elif reward_type == "YcxYuyueLing":
+            payload = {
+                    "ac": reward_type,
+                    "id": f"{task_items['bmh_task_id']}",
+                    "smdeviceid": "BTeK4FWZx3plsETCF1uY6S1h2uEajvI1AicKa4Lqz3U7Tt5wKKDZZqVmVr7WpkcEuSQKyiDA3d64bErE/saJp3Q==",
+                    "verison": "1.5.7.507",
+                    "r": f"0.{random.randint(100000000000000, 8999999999999999)}",
+                    "scookie": self.cookie,
+                    "device": "kbA25014349F11473F467DC6FF5C89E9D6"
+                }
+        elif reward_type == "YcxToWeiboRemindLing":
+            payload = {
+                "ac": reward_type,
+                "id": f"{task_items['bmh_task_id']}",
+                "smdeviceid": "BTeK4FWZx3plsETCF1uY6S1h2uEajvI1AicKa4Lqz3U7Tt5wKKDZZqVmVr7WpkcEuSQKyiDA3d64bErE/saJp3Q==",
+                "verison": "1.5.7.507",
+                "VersionCode": "342",
+                "r": f"0.{random.randint(100000000000000, 8999999999999999)}",
+                "scookie": self.cookie,
+                "device": "kbA25014349F11473F467DC6FF5C89E9D6"
+            }
+        elif reward_type == "YcxToH5Url":
+            payload = {
+                "ac": reward_type,
+                "id": f"{task_items['bmh_task_id']}",
+                "r": f"0.{random.randint(100000000000000, 8999999999999999)}",
+                "scookie": self.cookie,
+                "device": "kbA25014349F11473F467DC6FF5C89E9D6"
+            }
+        response = await self.client.post(
+            url=url,
+            content=urllib.parse.urlencode(payload)
+        )
+        try:
+            m_response = response.json()
+            if m_response["key"] == "ok":
+                fn_print(f"任务: 【{task_items['bmh_task_title']}】领取奖励成功！")
+            elif m_response["key"] == "2001":
+                fn_print(f"任务: 【{task_items['bmh_task_title']}】已经领取过奖励啦")
+            else:
+                fn_print(f"奖励领取失败，{response.text}")
+        except Exception as e:
+            print("领取任务奖励异常: ", e)
 
     async def task(self):
-        cookie = urllib.parse.quote(self.cookie) if "|" in self.cookie else self.cookie
         await self.get_task_ids()
-        await self.get_bmh_task_ids()
+        await self.get_recommendToDoToday_task_ids()
+        await self.get_moreManorToDo_task_ids()
 
-        for item, bmh_item in self.items, self.bmh_tasks:
-            if not await self.process_item(item, bmh_item):
-                break
-        # if self.temp_id:
-        #     print("等待体验结束...")
-        #     time.sleep(60)
-        #     for ty_id in self.temp_id:
-        #         await self.get_task("login", ty_id)
-        #         data = await self.get_task("signToday", ty_id)
-        #         key = str(data["key"])
-        #         if key == "-1005":
-        #             print("体验游戏中,请一分钟后再刷新领取☑️")
-        #             await self.get_task("tiyan", id)
-        #             self.temp_id.append(id)  # 将正在体验的活动id加入列表中
-        #         elif key == "-1007":
-        #             await self.get_task("sharelimit", id)
-        #             print(f"活动【{item['title']}】分享成功！✅")
-        #             await self.get_task("login", id)
-        #             await self.get_task("signToday", id)
-        #         elif key == "-1002":
-        #             print(f"活动【{item['title']}】奖励已领取过了！")
-        #         elif key == "200":
-        #             print(f"活动【{item['title']}】签到成功！✅已签到{data['signnum']}天")
-        #         elif key == "no_login":
-        #             print("⚠️⚠️scookie失效,请重新配置⚠️⚠️")
+        for bmh_item in self.bmh_tasks:
+            if not await self.process_doItDaily_task(bmh_item):
+                continue
+
+        for mmtodo_item in self.moreManorToDo_tasks:
+            if not await self.process_moreManorToDo_task(mmtodo_item):
+                continue
+
         await self.client.aclose()
 
 
@@ -225,7 +326,6 @@ async def run_all_tasks(cookies):
 
 
 async def main():
-    hykb_cookie = []
     await run_all_tasks(hykb_cookie)
 
 
