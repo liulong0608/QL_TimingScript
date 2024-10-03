@@ -189,7 +189,7 @@ class AsyncHykbTasks:
                 return False
         except Exception as e:
             fn_print("调度任务异常：", e)
-            fn_print(daily_share_callback_response.text)
+            fn_print(daily_share_callback_response.json())
 
     async def appointment_moreManorToDo_task(self, task_items):
         """
@@ -232,7 +232,7 @@ class AsyncHykbTasks:
             elif response_json["key"] == "2001":
                 fn_print(f"任务：【{task_items['bmh_task_title']}】今天已经领取过了！")
             else:
-                fn_print(f"奖励领取失败！{response.text}")
+                fn_print(f"奖励领取失败！{response.json()}")
         except Exception as e:
             print("领取任务奖励异常: ", e)
 
@@ -295,7 +295,7 @@ class AsyncHykbTasks:
             elif m_response["key"] == "2001":
                 fn_print(f"任务: 【{task_items['bmh_task_title']}】已经领取过奖励啦")
             else:
-                fn_print(f"奖励领取失败，{response.text}")
+                fn_print(f"奖励领取失败，{response.json()}")
         except Exception as e:
             print("领取任务奖励异常: ", e)
 
