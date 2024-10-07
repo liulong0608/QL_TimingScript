@@ -246,12 +246,12 @@ class HaoYouKuaiBao:
         return info
 
 
-if __name__ == '__main__':
-    threads = []
-    for cookie_ in Hykb_cookie:
-        hykb = HaoYouKuaiBao(cookie_)
-        thread = threading.Thread(target=hykb.sgin)
-        threads.append(thread)
-        thread.start()
-    for thread in threads:
-        thread.join()
+# if __name__ == '__main__':
+#     threads = []
+#     for cookie_ in Hykb_cookie:
+#         hykb = HaoYouKuaiBao(cookie_)
+#         thread = threading.Thread(target=hykb.sgin)
+#         threads.append(thread)
+#         thread.start()
+#     for thread in threads:
+#         thread.join()

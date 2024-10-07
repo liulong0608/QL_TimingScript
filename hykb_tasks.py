@@ -329,6 +329,6 @@ async def main():
     await run_all_tasks(hykb_cookie)
 
 
-if __name__ == '__main__':
-    asyncio.run(main())
-    send_notification_message_collection("好游快爆活动奖励领取通知 - {}".format(datetime.now().strftime("%Y/%m/%d")))
+# if __name__ == '__main__':
+#     asyncio.run(main())
+#     send_notification_message_collection("好游快爆活动奖励领取通知 - {}".format(datetime.now().strftime("%Y/%m/%d")))
