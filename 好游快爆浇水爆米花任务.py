@@ -318,6 +318,7 @@ class HaoYouKuaiBao:
             # 优先判断成熟度是否已满
             if data['config']['csd_jdt'] == "100%":
                 await self.harvest()
+                data = await self.login()
             # 判断是否已播种
             if data['config']['grew'] == '-1':
                 plant_status = await self.plant()
