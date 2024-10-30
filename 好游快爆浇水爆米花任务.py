@@ -33,6 +33,7 @@ class HaoYouKuaiBao:
     def __init__(self, cookie):
         self.moreManorToDo_tasks = []
         self.recommend_task_list = []
+        self.small_game_task_list = []
         self.cookie = cookie
         self.headers = {
             "Origin": "https://huodong3.i3839.com",
@@ -44,7 +45,9 @@ class HaoYouKuaiBao:
             verify=False,
             headers=self.headers
         )
-        self.user_name = self.__user_info()["user"]
+        __user_info = self.__user_info()
+        self.user_name = __user_info.get("user")
+        self.device = cookie.split("|")[4]
 
     def __user_info(self):
         """
@@ -53,14 +56,17 @@ class HaoYouKuaiBao:
         """
         try:
             u_response = self.client.post(
-                url="/n/hykb/qdjh/ajax.php",
-                content=f"ac=login&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                url="/n/hykb/cornfarm/ajax.php",
+                content=f"ac=login&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}"
             ).json()
-            if u_response["key"] == "ok":
+            if u_response["key"] == "ok" and u_response["loginStatus"] == "100":
                 return {
                     "user": u_response["config"]["name"],
-                    "uid": u_response["config"]["uid"]
+                    "uid": u_response["config"]["uid"],
+                    "device_id": u_response["config"]["deviceid"]
                 }
+            else:
+                print("好游快爆-获取用户信息出现错误：{}".format(u_response))
         except Exception as e:
             print("好游快爆-获取用户信息出现错误：{}".format(e))
 
@@ -72,7 +78,7 @@ class HaoYouKuaiBao:
         try:
             l_response = self.client.post(
                 url="/n/hykb/cornfarm/ajax.php",
-                content=f"ac=login&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                content=f"ac=login&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             # fn_print("="*10 + f"【{self.user_name}】登录成功" + "="*10)
             return l_response
@@ -88,7 +94,7 @@ class HaoYouKuaiBao:
         try:
             w_response = self.client.post(
                 url="/n/hykb/cornfarm/ajax_sign.php",
-                content=f"ac=Sign&verison=1.5.7.005&OpenAutoSign=&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                content=f"ac=Sign&verison=1.5.7.005&OpenAutoSign=&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             if w_response["key"] == "ok":
                 fn_print("={}=, 浇水成功💧💧💧".format(self.user_name))
@@ -112,7 +118,7 @@ class HaoYouKuaiBao:
         try:
             h_response = self.client.post(
                 url="/n/hykb/cornfarm/ajax_plant.php",
-                content=f"ac=Harvest&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                content=f"ac=Harvest&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             if h_response["key"] == "ok":
                 fn_print("={}=, 收获成功🌽🌽🌽".format(self.user_name))
@@ -132,7 +138,7 @@ class HaoYouKuaiBao:
         try:
             p_response = self.client.post(
                 url="/n/hykb/cornfarm/ajax_plant.php",
-                content=f"ac=Plant&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                content=f"ac=Plant&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             if p_response["key"] == "ok":
                 fn_print("={}=, 播种成功🌾🌾🌾".format(self.user_name))
@@ -156,7 +162,7 @@ class HaoYouKuaiBao:
         try:
             s_response = self.client.post(
                 url="https://shop.3839.com/index.php?c=Index&a=initCard",
-                content=f"pid=1660&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                content=f"pid=1660&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             if s_response['code'] == 200:
                 return s_response['data']['store_id'], s_response['data']['product_name']
@@ -173,7 +179,7 @@ class HaoYouKuaiBao:
         goods_id, goods_name = await self.get_goods()
         cbs_response = self.client.post(
             url="/n/hykb/bmhstore2/inc/virtual/ajaxVirtual.php",
-            content=f"ac=checkExchange&gid={goods_id}&t={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+            content=f"ac=checkExchange&gid={goods_id}&t={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}&r=0.{random.randint(100000000000000000, 899999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
         ).json()
         if cbs_response['key'] != "200" and cbs_response['msg'] != "验证通过":
             fn_print(f"={self.user_name}=, ❌购买种子出现错误：{cbs_response}")
@@ -182,7 +188,7 @@ class HaoYouKuaiBao:
             # 购买种子
             bs_response = self.client.post(
                 url="/n/hykb/bmhstore2/inc/virtual/ajaxVirtual.php",
-                content=f"ac=exchange&t={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}&r=0.{random.randint(100000000000000000, 899999999999999999)}&goodsid={goods_id}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                content=f"ac=exchange&t={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}&r=0.{random.randint(100000000000000000, 899999999999999999)}&goodsid={goods_id}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             if bs_response['key'] == 200:
                 fn_print(f"={self.user_name}=, 购买种子成功，还剩下🍿爆米花{bs_response['bmh']}个")
@@ -212,6 +218,14 @@ class HaoYouKuaiBao:
                         "bmh_task_id": re.search(r"daily_dd_(.+)", id_param).group(1),
                         "bmh_task_title": re.search(r"分享福利：(.*)", title_param).group(
                             1) if "分享福利" in title_param else re.search(r"分享资讯：(.*)", title_param).group(1),
+                        "reward_num": re.search(r"可得+(.+)", reward_param).group(1)
+                    }
+                )
+            elif "免安装、即点即玩" in task_item.select("div.task-info")[0].get_text():
+                self.small_game_task_list.append(
+                    {
+                        "bmh_task_id": re.search(r"daily_dd_(.+)", id_param).group(1),
+                        "bmh_task_title": title_param,
                         "reward_num": re.search(r"可得+(.+)", reward_param).group(1)
                     }
                 )
@@ -247,7 +261,7 @@ class HaoYouKuaiBao:
         try:
             daily_share_response = self.client.post(
                 url="/n/hykb/cornfarm/ajax_daily.php",
-                content=f"ac=DailyShare&id={recommend_task['bmh_task_id']}&onlyc=0&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                content=f"ac=DailyShare&id={recommend_task['bmh_task_id']}&onlyc=0&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             if daily_share_response["key"] != "2002":
                 return False
@@ -255,7 +269,7 @@ class HaoYouKuaiBao:
             daily_share_callback_response = self.client.post(
                 url="/n/hykb/cornfarm/ajax_daily.php",
                 content=f"ac=DailyShareCallback&id={recommend_task['bmh_task_id']}&mode=qq&source=ds&r=0.{random.randint(100000000000000, 8999999999999999)}"
-                        f"&scookie={urllib.parse.quote(self.cookie)}&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                        f"&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
             ).json()
             if daily_share_callback_response["key"] == "ok" and daily_share_callback_response["info"] == "可以领奖":
                 fn_print(f"={self.user_name}=, 任务-{recommend_task['bmh_task_title']}- 可以领奖了🎉🎉🎉")
@@ -270,6 +284,48 @@ class HaoYouKuaiBao:
         except Exception as e:
             fn_print(f"={self.user_name}=, 调度任务异常：", e)
 
+    async def do_small_game_task(self, recommend_task):
+        """
+        免安装、即点即玩的小游戏任务
+        :param recommend_task: 
+        :return: 
+        """
+        try:
+            daily_small_game_response = self.client.post(
+                url="/n/hykb/cornfarm/ajax_daily.php",
+                content=f"ac=DailySmallGame&id={recommend_task['bmh_task_id']}&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
+            ).json()
+            if daily_small_game_response["key"] == "ok":
+                fn_print(f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- 可以领奖了🎉🎉🎉")
+                return True
+            else:
+                fn_print(
+                    f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- ❌游玩小游戏任务失败：{daily_small_game_response}")
+                return False
+        except Exception as e:
+            fn_print(f"={self.user_name}=, 小游戏任务调度任务异常：", e)
+
+    async def receive_small_game_reward(self, recommend_task):
+        """
+        领取免安装、即点即玩的小游戏任务奖励
+        :param recommend_task: 
+        :return: 
+        """
+        try:
+            recevie_small_game_reward_response = self.client.post(
+                url="/n/hykb/cornfarm/ajax_daily.php",
+                content=f"ac=DailySmallGameLing&id={recommend_task['bmh_task_id']}&VersionCode=342&smdeviceid=BIb2%2B05P0FzEEGiSf%2Fg59Gok28Sb6y1tyhmR8RlC2X0FUtOGCbu3ONvgIEoA2hae0BrOCLXtqoWe1TgeVHU0L7A%3D%3D&verison=1.5.7.507&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
+            ).json()
+            if recevie_small_game_reward_response["key"] == "ok":
+                fn_print(f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- ✅领取任务奖励成功！")
+            elif recevie_small_game_reward_response["key"] == "2001":
+                fn_print(f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- 已经领过奖励了！")
+            else:
+                fn_print(
+                    f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- ❌领取任务奖励失败：{recevie_small_game_reward_response}")
+        except Exception as e:
+            fn_print(f"={self.user_name}=, 小游戏任务领取奖励异常：", e)
+
     async def receive_commendDaily_reward(self, recommend_task):
         """
         领取每日必做推荐任务奖励
@@ -280,7 +336,7 @@ class HaoYouKuaiBao:
             recevie_daily_reward_response = self.client.post(
                 url="/n/hykb/cornfarm/ajax_daily.php",
                 content=f"ac=DailyShareLing&smdeviceid=BTeK4FWZx3plsETCF1uY6S1h2uEajvI1AicKa4Lqz3U7Tt5wKKDZZqVmVr7WpkcEuSQKyiDA3d64bErE%2FsaJp3Q%3D%3D&verison=1.5.7.507&id={recommend_task['bmh_task_id']}&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={self.cookie}"
-                        f"&device=kbA25014349F11473F467DC6FF5C89E9D6"
+                        f"&device={self.device}"
             ).json()
             if recevie_daily_reward_response["key"] == "ok":
                 fn_print(f"={self.user_name}=, 任务-{recommend_task['bmh_task_title']}- ✅领取任务奖励成功！")
@@ -300,6 +356,15 @@ class HaoYouKuaiBao:
         await self.do_tasks_every_day(recommend_task)  # 调度任务
         await self.receive_commendDaily_reward(recommend_task)  # 领取任务奖励 
 
+    async def process_small_game_task(self, recommend_task):
+        """
+        处理免安装、即点即玩的小游戏任务
+        :param recommend_task: 
+        :return: 
+        """
+        await self.do_small_game_task(recommend_task)
+        await self.receive_small_game_reward(recommend_task)
+
     async def run_task(self):
         """
         执行任务
@@ -309,6 +374,9 @@ class HaoYouKuaiBao:
 
         for recommend_task in self.recommend_task_list:
             if not await self.process_doItRecommendDaily_task(recommend_task):
+                continue
+        for small_game_task in self.small_game_task_list:
+            if not await self.process_small_game_task(small_game_task):
                 continue
 
     async def run(self):
