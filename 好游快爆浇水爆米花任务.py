@@ -21,7 +21,12 @@ from bs4 import BeautifulSoup
 from fn_print import fn_print
 from sendNotify import send_notification_message_collection
 
-
+os.environ[
+    "Hykb_cookie"] = (
+    "1|0|128421985|5b+r54iG55So5oi3MTI4NDIxOTg1|kbA25014349F11473F467DC6FF5C89E9D6|plcAoJ6jITDlGvEnGl80IlfuoREWIlVjITZOpv6U7WI=%1|5312899df0a922f9707df9a5ad8dee37"
+    "@1|0|144108620|5b+r54iG55So5oi3MTQ0MTA4NjIw|kbA25014349F11473F467DC6FF5C89E9D6|plulIJGcoRZw7T7AGl6A7W9iGJDr7TpfovIj7j5fGiV=%1|d19c657cc9f8b0f4e029088db23a75d3"
+    # "@4|0|16821765|5Lyx5aS05Y+R5Lmx5LqG5ZOm|kb260B6ED0E811505B83077671ACBDBDF8|7l8A7TIWpJVyIiGfIjafpiGr7iIWGR6woT6AGlDu7jb=%1|2a9515db5d2d5392a7ad138c400bb287"
+)
 if 'Hykb_cookie' in os.environ:
     Hykb_cookie = re.split("@", os.environ.get("Hykb_cookie"))
 else:
@@ -320,6 +325,22 @@ class HaoYouKuaiBao:
                 fn_print(f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- ✅领取任务奖励成功！")
             elif recevie_small_game_reward_response["key"] == "2001":
                 fn_print(f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- 已经领过奖励了！")
+            elif recevie_small_game_reward_response["key"] == "2005":   # 表示成熟度已经满了，先收割再播种（如果没有种子就先去购买种子），再领取小游戏任务奖励
+                # 收割
+                await self.harvest()
+                # 播种
+                plant_status = await self.plant()
+                if plant_status == -1:  # 没有种子
+                    fn_print("={}=, 播种失败，没有种子".format(self.user_name))
+                    # 购买种子
+                    await self.buy_seeds()
+                    await self.plant()
+                elif plant_status == 1:
+                    ...
+                else:
+                    fn_print("={}=, 播种失败".format(self.user_name))
+                # 领取小游戏任务奖励
+                await self.receive_small_game_reward(recommend_task)
             else:
                 fn_print(
                     f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- ❌领取任务奖励失败：{recevie_small_game_reward_response}")
