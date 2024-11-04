@@ -6,6 +6,7 @@
 """
 变量Hykb_cookie
 corn: 0 0 0 * * *
+const $ = new Env('好游快爆浇水爆米花任务');
 """
 import asyncio
 import os
