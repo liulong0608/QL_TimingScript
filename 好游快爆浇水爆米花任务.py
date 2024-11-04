@@ -5,8 +5,8 @@
 # @EditTime         2024/10/7
 """
 变量Hykb_cookie
-corn: 0 0 0 * * *
-const $ = new Env('好游快爆浇水爆米花任务');
+corn: 0 0 0,12 * * *
+const $ = new Env('好游快爆');
 """
 import asyncio
 import os
@@ -380,7 +380,7 @@ class HaoYouKuaiBao:
         :return: 
         """
         await self.do_small_game_task(recommend_task)
-        await asyncio.sleep(10)
+        # await asyncio.sleep(10)
         await self.receive_small_game_reward(recommend_task)
 
     async def run_task(self):
