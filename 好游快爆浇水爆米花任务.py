@@ -1,8 +1,3 @@
-# -*- coding=UTF-8 -*-
-# @Project          QL_TimingScript
-# @fileName         好游快爆浇水爆米花任务.py
-# @author           Echo
-# @EditTime         2024/10/7
 """
 变量Hykb_cookie
 corn: 0 0 0,12 * * *
