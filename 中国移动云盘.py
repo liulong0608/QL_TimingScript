@@ -14,17 +14,23 @@ import os
 import random
 import re
 import time
-import urllib.parse
 from datetime import datetime
 
 import httpx
 import requests
+import urllib3
 
 from fn_print import fn_print
 from sendNotify import send_notification_message_collection
 
 
-
+os.environ['ydyp_ck'] = (
+    "Basic bW9iaWxlOjE4NTgyODUyMjYzOkdPVHpqTnRtfDF8UkNTfDE3MzMyOTcwODYzMzZ8UGdPVkZ6V1JWYjdSRjJ1Y3pNejNJd1o5b3FiYzJzNmw5QVdWMTlNZk1HdEt4LndXa2t4SkE2cmZEcGZWaUNBU1UyVW94dW9zSXNnZUxUVk9IWnczajd5Q1AzNnM3SEk5MDhFMDRRVm1FVjcwTWJjQXNDU3pLcEV0UlRpQ1pkUVFnUUdZcXpCVW5IeDhQak55QW1UbTRFb2pvQkRxMVBqVHdCcXBuZnNCTDFvLQ=="
+    "#18582852263"
+    "#STuid0000011730705776084kKnQ1rbi1wnexE5CovnoFuxLUtnkrgLL"
+    "#b94fd25a57faed94"
+    "#00czMDk3NzU1OTAwMTQ3MDQx0421561D000004"
+)
 ua = "Mozilla/5.0 (Linux; Android 11; M2012K10C Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/90.0.4430.210 Mobile Safari/537.36 MCloudApp/10.0.1"
 
 if 'ydyp_ck' in os.environ:
@@ -452,6 +458,7 @@ class MobileCloudDisk:
                 'Referer': 'https://caiyun.feixin.10086.cn:7071/',
                 'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7'
             }
+            urllib3.disable_warnings()
             login_info_data = requests.request("""GET""", login_info_url, headers=headers, verify=False)
             treeCookie = login_info_data.request.headers['Cookie']
             self.treetHeaders['Cookie'] = treeCookie
