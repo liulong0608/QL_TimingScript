@@ -452,14 +452,9 @@ class MobileCloudDisk:
                 'Referer': 'https://caiyun.feixin.10086.cn:7071/',
                 'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7'
             }
-            login_info_response = await self.client.get(
-                url=login_info_url,
-                headers=headers
-            )
-            cookies = login_info_response.cookies
-            # 将 Cookie 信息拆分成多个 Cookie 头
-            cookies_str = f"YZKF_SESSION={urllib.parse.quote_plus(cookies['YZKF_SESSION'])}; RMKEY={urllib.parse.quote_plus(self.rmkey)}; Os_SSo_Sid={urllib.parse.quote_plus(self.Os_SSo_Sid)}"
-            self.treetHeaders['Cookie'] = cookies_str
+            login_info_data = requests.request("""GET""", login_info_url, headers=headers, verify=False)
+            treeCookie = login_info_data.request.headers['Cookie']
+            self.treetHeaders['Cookie'] = treeCookie
             do_login_url = f'{self.fruit_url}login/userinfo.do'
             do_login_response = await self.client.get(
                 url=do_login_url,
