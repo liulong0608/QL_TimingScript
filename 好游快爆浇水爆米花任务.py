@@ -375,7 +375,7 @@ class HaoYouKuaiBao:
         :return: 
         """
         await self.do_small_game_task(recommend_task)
-        # await asyncio.sleep(10)
+        await asyncio.sleep(60*5)
         await self.receive_small_game_reward(recommend_task)
 
     async def run_task(self):
