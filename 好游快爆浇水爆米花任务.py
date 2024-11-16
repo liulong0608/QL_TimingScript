@@ -17,7 +17,6 @@ from bs4 import BeautifulSoup
 from fn_print import fn_print
 from sendNotify import send_notification_message_collection
 
-
 if 'Hykb_cookie' in os.environ:
     Hykb_cookie = re.split("@", os.environ.get("Hykb_cookie"))
 else:
@@ -27,6 +26,7 @@ else:
 
 class HaoYouKuaiBao:
     def __init__(self, cookie):
+        self.appointment_game_task_list = []
         self.moreManorToDo_tasks = []
         self.recommend_task_list = []
         self.small_game_task_list = []
@@ -225,6 +225,14 @@ class HaoYouKuaiBao:
                         "reward_num": re.search(r"可得+(.+)", reward_param).group(1)
                     }
                 )
+            elif "预约" in task_item.select("div.task-info")[0].get_text():
+                self.appointment_game_task_list.append(
+                    {
+                        "bmh_task_id": re.search(r"daily_dd_(.+)", id_param).group(1),
+                        "bmh_task_title": title_param,
+                        "reward_num": re.search(r"可得+(.+)", reward_param).group(1)
+                    }
+                )
 
     async def get_moreManorToDo_task_ids(self):
         """
@@ -247,6 +255,40 @@ class HaoYouKuaiBao:
                     "reward_num": re.search(r"可得+(.+)", reward_param).group(1)
                 }
             )
+
+    async def appointment_game_task(self, recommend_task):
+        """
+        预约游戏任务
+        :param recommend_task: 
+        :return: 
+        """
+        try:
+            daily_game_detail_response = self.client.post(
+                url="/n/hykb/cornfarm/ajax_daily.php",
+                content=f"ac=DailyGameDetail&id={recommend_task['bmh_task_id']}&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
+            ).json()
+            if daily_game_detail_response["key"] == "ok":
+                fn_print(f"={self.user_name}=, 预约游戏任务成功，任务名称：{recommend_task['bmh_task_title']}")
+        except Exception as e:
+            fn_print(f"={self.user_name}=, 预约游戏任务调度任务异常：", e)
+
+    async def receive_yuyue_game_rewards(self, recommend_task):
+        """
+        领取预约游戏任务奖励
+        :param recommend_task: 
+        :return: 
+        """
+        try:
+            daily_yuyue_ling_response = self.client.post(
+                url="/n/hykb/cornfarm/ajax_daily.php",
+                content=f"ac=DailyYuyueLing&id={recommend_task['bmh_task_id']}&smdeviceid=BIb2%2B05P0FzEEGiSf%2Fg59Gok28Sb6y1tyhmR8RlC2X0FUtOGCbu3ONvgIEoA2hae0BrOCLXtqoWe1TgeVHU0L7A%3D%3D&verison=1.5.7.507&r=0.{random.randint(100000000000000, 8999999999999999)}&scookie={urllib.parse.quote(self.cookie)}&device={self.device}"
+            ).json()
+            if daily_yuyue_ling_response["key"] == "ok":
+                fn_print(f"={self.user_name}=, 任务-{recommend_task['bmh_task_title']}- 可以领奖了🎉🎉🎉")
+            else:
+                fn_print(f"={self.user_name}=, 任务-{recommend_task['bmh_task_title']}- 奖励领取失败❌")
+        except Exception as e:
+            fn_print(f"={self.user_name}=, 领取预约游戏任务奖励异常：", e)
 
     async def do_tasks_every_day(self, recommend_task):
         """
@@ -316,7 +358,7 @@ class HaoYouKuaiBao:
                 fn_print(f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- ✅领取任务奖励成功！")
             elif recevie_small_game_reward_response["key"] == "2001":
                 fn_print(f"={self.user_name}=, 小游戏任务🎮🎮🎮-{recommend_task['bmh_task_title']}- 已经领过奖励了！")
-            elif recevie_small_game_reward_response["key"] == "2005":   # 表示成熟度已经满了，先收割再播种（如果没有种子就先去购买种子），再领取小游戏任务奖励
+            elif recevie_small_game_reward_response["key"] == "2005":  # 表示成熟度已经满了，先收割再播种（如果没有种子就先去购买种子），再领取小游戏任务奖励
                 # 收割
                 await self.harvest()
                 # 播种
@@ -368,6 +410,10 @@ class HaoYouKuaiBao:
         await self.do_tasks_every_day(recommend_task)  # 调度任务
         await self.receive_commendDaily_reward(recommend_task)  # 领取任务奖励 
 
+    async def process_yuyue_game_task(self, recommend_task):
+        await self.appointment_game_task(recommend_task)
+        await self.receive_yuyue_game_rewards(recommend_task)
+
     async def process_small_game_task(self, recommend_task):
         """
         处理免安装、即点即玩的小游戏任务
@@ -375,7 +421,7 @@ class HaoYouKuaiBao:
         :return: 
         """
         await self.do_small_game_task(recommend_task)
-        await asyncio.sleep(60*5)
+        await asyncio.sleep(60 * 5)
         await self.receive_small_game_reward(recommend_task)
 
     async def run_task(self):
@@ -385,12 +431,11 @@ class HaoYouKuaiBao:
         """
         await self.get_recommend_task_ids()
 
-        for recommend_task in self.recommend_task_list:
-            if not await self.process_doItRecommendDaily_task(recommend_task):
-                continue
-        for small_game_task in self.small_game_task_list:
-            if not await self.process_small_game_task(small_game_task):
-                continue
+        await asyncio.gather(
+            *[self.process_doItRecommendDaily_task(task) for task in self.recommend_task_list],
+            *[self.process_small_game_task(task) for task in self.small_game_task_list],
+            *[self.process_yuyue_game_task(task) for task in self.appointment_game_task_list]
+        )
 
     async def run(self):
         data = await self.login()
